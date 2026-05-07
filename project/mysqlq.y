@@ -73,26 +73,26 @@
 #include <string.h>
 #include "symtable.h"
 
-/* ── line storage for pretty output ───────────────────────────────────────── */
+/* ── Αποθήκευση γραμμών πηγαίου κώδικα για εκτύπωση ── */
 #define MAX_LINES 4096
 static char *src_lines[MAX_LINES];
 static int   num_lines  = 0;
 
-/* ── error tracking ──────────────────────────────────────────────────────── */
+/* ── Παρακολούθηση σφαλμάτων ──*/
 static int   error_flag = 0;
 static int   error_line_no = 0;
 static char  error_msg[256];
 
-/* ── forward declarations ────────────────────────────────────────────────── */
+/* ── Ορισμοί προς τα εμπρός ── */
 int  yylex(void);
 void yyerror(const char *s);
 extern int yylineno;
 extern FILE *yyin;
 
-/* ── current CREATE table ────────────────────────────────────────────────── */
+/* ── Τρέχων πίνακας υπό δημιουργία (για CREATE TABLE) ─── */
 static Table *cur_create_table = NULL;
 
-/* ── deferred SELECT column validation list ──────────────────────────────── */
+/* ──  Λίστα στηλών SELECT για αναβαλλόμενη επικύρωση  ─── */
 #define MAX_PENDING 256
 static char *pending_cols[MAX_PENDING];
 static int   pending_cols_size = 0;
@@ -112,8 +112,6 @@ static void pending_cols_add(const char *col)
         pending_cols[pending_cols_size++] = strdup(col);
 }
 
-/* Validate all pending SELECT columns against current query context.
-   Returns 0 on success, -1 on first error (fills error_msg). */
 static int pending_cols_validate(void)
 {
     for (int i = 0; i < pending_cols_size; i++) {
@@ -143,7 +141,7 @@ static int pending_cols_validate(void)
     return 0;
 }
 
-/* ── helper: semantic error (stops parse) ───────────────────────────────── */
+/* ──  Βοηθητική συνάρτηση σημασιολογικού σφάλματος (σταματά την ανάλυση) ── */
 static void sem_error(const char *msg)
 {
     if (!error_flag) {
