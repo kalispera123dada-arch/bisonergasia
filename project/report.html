@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<title>Εργαστηριακή Άσκηση – mySQLq Parser</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Times New Roman", Times, serif; font-size: 13pt; color: #111; background: #fff; padding: 40px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 18pt; text-align: center; margin-bottom: 6px; }
+  h2 { font-size: 15pt; margin-top: 30px; margin-bottom: 8px; border-bottom: 2px solid #333; padding-bottom: 4px; }
+  h3 { font-size: 13pt; margin-top: 18px; margin-bottom: 6px; }
+  .center { text-align: center; }
+  .header-block { text-align: center; margin-bottom: 30px; line-height: 1.7; }
+  .header-block p { margin: 2px 0; }
+  table.members { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  table.members th { background: #333; color: #fff; padding: 7px 12px; text-align: left; font-size: 12pt; }
+  table.members td { border: 1px solid #aaa; padding: 6px 12px; font-size: 12pt; }
+  table.members tr:nth-child(even) td { background: #f5f5f5; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 14px 16px; border-radius: 6px; font-family: "Courier New", monospace; font-size: 10pt; overflow-x: auto; white-space: pre-wrap; word-break: break-word; line-height: 1.5; margin: 10px 0; }
+  .output-ok  { background: #0d2a0d; color: #a8e6a8; }
+  .output-err { background: #2a0d0d; color: #e6a8a8; }
+  .bnf-box { background: #f0f4ff; border-left: 4px solid #336; padding: 12px 16px; font-family: "Courier New", monospace; font-size: 10.5pt; margin: 10px 0; line-height: 1.7; }
+  .note { background: #fff8e1; border-left: 4px solid #f0a500; padding: 10px 14px; margin: 14px 0; font-size: 12pt; }
+  p { margin: 8px 0; line-height: 1.6; }
+  ul { margin: 8px 0 8px 24px; line-height: 1.7; }
+  hr { border: none; border-top: 1px solid #ccc; margin: 28px 0; }
+  .section-num { color: #336; }
+  .test-label { font-weight: bold; font-size: 11.5pt; margin: 16px 0 4px 0; }
+  .page-break { page-break-after: always; }
+  @media print {
+    body { padding: 20px; }
+    pre { font-size: 9pt; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<div class="header-block">
+  <p><strong>Πανεπιστήμιο Πατρών</strong></p>
+  <p>Τμήμα Μηχανικών Η/Υ &amp; Πληροφορικής</p>
+  <p>Αρχές Γλωσσών Προγραμματισμού &amp; Μεταφραστών</p>
+  <p>Εαρινό Εξάμηνο 2026</p>
+</div>
+
+<h1>Εργαστηριακή Άσκηση – Λεκτικός &amp; Συντακτικός Αναλυτής mySQLq</h1>
+<br>
+
+<!-- ═══════════════ ΜΕΛΗ ═══════════════ -->
+<h2><span class="section-num">1.</span> Στοιχεία Ομάδας</h2>
+
+<table class="members">
+  <tr>
+    <th>Ονοματεπώνυμο</th>
+    <th>Αριθμός Μητρώου</th>
+    <th>Έτος</th>
+    <th>e-mail</th>
+  </tr>
+  <tr>
+    <td>Μάριος Πολυκάρπου</td>
+    <td>1110615</td>
+    <td>2ο</td>
+    <td>up1110615@upatras.gr</td>
+  </tr>
+</table>
+
+<hr>
+
+<!-- ═══════════════ BNF ═══════════════ -->
+<h2><span class="section-num">2.</span> Γραμματική της Γλώσσας σε BNF</h2>
+
+<div class="bnf-box">
+&lt;program&gt;        ::= &lt;statement_list&gt;<br>
+<br>
+&lt;statement_list&gt; ::= &lt;statement&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &lt;statement_list&gt; &lt;statement&gt;<br>
+<br>
+&lt;statement&gt;      ::= &lt;create_stmt&gt; ';'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &lt;select_stmt&gt; ';'<br>
+<br>
+<strong>-- CREATE TABLE --</strong><br>
+&lt;create_stmt&gt;    ::= CREATE TABLE identifier '(' &lt;column_list&gt; ')'<br>
+<br>
+&lt;column_list&gt;    ::= &lt;column_def&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &lt;column_list&gt; ',' &lt;column_def&gt;<br>
+<br>
+&lt;column_def&gt;     ::= identifier &lt;data_type&gt;<br>
+<br>
+&lt;data_type&gt;      ::= INT<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| FLOAT<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| VARCHAR '(' int_literal ')'<br>
+<br>
+<strong>-- SELECT --</strong><br>
+&lt;select_stmt&gt;    ::= SELECT &lt;col_select&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FROM &lt;table_ref&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;join_clauses&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;opt_where&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;opt_group&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;opt_order&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;opt_limit&gt;<br>
+<br>
+&lt;col_select&gt;     ::= '*'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &lt;col_ref_list&gt;<br>
+<br>
+&lt;col_ref_list&gt;   ::= &lt;col_ref&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &lt;col_ref_list&gt; ',' &lt;col_ref&gt;<br>
+<br>
+&lt;col_ref&gt;        ::= identifier<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| identifier '.' identifier<br>
+<br>
+&lt;table_ref&gt;      ::= identifier<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| identifier AS identifier<br>
+<br>
+<strong>-- JOIN (Ερώτημα 3) --</strong><br>
+&lt;join_clauses&gt;   ::= ε<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &lt;join_clauses&gt; &lt;join_clause&gt;<br>
+<br>
+&lt;join_clause&gt;    ::= JOIN &lt;table_ref&gt; ON &lt;qualified_col&gt; '=' &lt;qualified_col&gt;<br>
+<br>
+&lt;qualified_col&gt;  ::= identifier '.' identifier<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| identifier<br>
+<br>
+<strong>-- WHERE --</strong><br>
+&lt;opt_where&gt;      ::= ε<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| WHERE &lt;condition&gt;<br>
+<br>
+&lt;condition&gt;      ::= &lt;simple_cond&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &lt;condition&gt; AND &lt;condition&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &lt;condition&gt; OR  &lt;condition&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| NOT &lt;condition&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| '(' &lt;condition&gt; ')'<br>
+<br>
+&lt;simple_cond&gt;    ::= &lt;col_ref&gt; &lt;comp_op&gt; &lt;literal&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &lt;col_ref&gt; IN '(' &lt;lit_list&gt; ')'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &lt;col_ref&gt; NOT IN '(' &lt;lit_list&gt; ')'<br>
+<br>
+&lt;comp_op&gt;        ::= '=' | '!=' | '&gt;' | '&lt;' | '&gt;=' | '&lt;='<br>
+<br>
+&lt;literal&gt;        ::= int_literal | float_literal | string_literal<br>
+<br>
+&lt;lit_list&gt;       ::= &lt;literal&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| &lt;lit_list&gt; ',' &lt;literal&gt;<br>
+<br>
+<strong>-- GROUP BY / ORDER BY / LIMIT --</strong><br>
+&lt;opt_group&gt;      ::= ε | GROUP BY &lt;col_ref_list&gt;<br>
+&lt;opt_order&gt;      ::= ε | ORDER BY &lt;col_ref_list&gt;<br>
+&lt;opt_limit&gt;      ::= ε | LIMIT int_literal<br>
+</div>
+
+<hr>
+
+<!-- ═══════════════ ΑΡΧΕΙΑ ═══════════════ -->
+<h2><span class="section-num">3.</span> Αρχεία Περιγραφής της Γλώσσας</h2>
+
+<h3>3.1 Αρχείο Flex — <code>mysqlq.l</code></h3>
+<pre>%{
+/*
+ * mysqlq.l — Flex lexer for the mySQLq pseudo-SQL language
+ *
+ * Keywords are case-insensitive.
+ * Identifiers are case-sensitive.
+ */
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include "mysqlq.tab.h"
+
+void yyerror(const char *s);
+%}
+
+%option yylineno
+%option noyywrap
+
+DIGIT      [0-9]
+ID_START   [a-zA-Z_]
+ID_CONT    [a-zA-Z0-9_]
+
+%%
+
+"--"[^\n]*              { /* single-line comment — skip */ }
+
+"/*"                    {
+    /* multi-line comment */
+    int c, prev = 0;
+    while ((c = input()) != EOF) {
+        if (prev == '*' &amp;&amp; c == '/') break;
+        prev = c;
+    }
+    if (c == EOF)
+        yyerror("Unterminated block comment");
+}
+
+[ \t\r\n]+              { /* whitespace — skip */ }
+
+[Ss][Ee][Ll][Ee][Cc][Tt]           { return SELECT;      }
+[Ff][Rr][Oo][Mm]                   { return FROM;        }
+[Ww][Hh][Ee][Rr][Ee]               { return WHERE;       }
+[Ll][Ii][Mm][Ii][Tt]               { return LIMIT;       }
+[Gg][Rr][Oo][Uu][Pp]               { return GROUP;       }
+[Oo][Rr][Dd][Ee][Rr]               { return ORDER;       }
+[Bb][Yy]                           { return BY;          }
+[Aa][Nn][Dd]                       { return AND;         }
+[Oo][Rr]                           { return OR;          }
+[Nn][Oo][Tt]                       { return NOT;         }
+[Cc][Rr][Ee][Aa][Tt][Ee]           { return CREATE;      }
+[Tt][Aa][Bb][Ll][Ee]               { return TABLE;       }
+[Jj][Oo][Ii][Nn]                   { return JOIN;        }
+[Oo][Nn]                           { return ON;          }
+[Aa][Ss]                           { return AS;          }
+[Ii][Nn][Tt]                       { return INT_TYPE;    }
+[Ff][Ll][Oo][Aa][Tt]               { return FLOAT_TYPE;  }
+[Vv][Aa][Rr][Cc][Hh][Aa][Rr]       { return VARCHAR;     }
+[Ii][Nn]                           { return IN_KW;       }
+
+{ID_START}{ID_CONT}*    { yylval.sval = strdup(yytext); return IDENTIFIER; }
+
+"-"?{DIGIT}+"."{DIGIT}+ { yylval.dval = atof(yytext);  return FLOAT_LIT;  }
+"-"?{DIGIT}+             { yylval.ival = atoi(yytext);  return INT_LIT;    }
+
+\'[^\']*\'               { yylval.sval = strdup(yytext); return STRING_LIT; }
+
+"!="  { return NE; }   ">=" { return GE; }   "&lt;=" { return LE; }
+"&gt;"   { return GT; }   "&lt;"  { return LT; }   "="  { return EQ; }
+"."   { return DOT; }  ","  { return COMMA; }   ";"  { return SEMICOLON; }
+"("   { return LPAREN; }   ")"  { return RPAREN; }   "*"  { return STAR; }
+
+.     { char msg[64]; snprintf(msg,sizeof(msg),"Unknown character: '%s'",yytext); yyerror(msg); }
+%%</pre>
+
+<h3>3.2 Αρχείο Bison — <code>mysqlq.y</code> (τελικό, εκτεταμένη έκδοση)</h3>
+<p>Το αρχείο Bison υλοποιεί την πλήρη γραμματική, τους σημασιολογικούς ελέγχους (Ερώτημα 2) και τις επεκτάσεις JOIN/AS (Ερώτημα 3). Το πλήρες αρχείο βρίσκεται στο <code>mysqlq.y</code> του παραδοτέου.</p>
+
+<h3>3.3 Αρχείο Πίνακα Συμβόλων — <code>symtable.h</code> / <code>symtable.c</code></h3>
+<p>Υλοποιεί την αποθήκευση πινάκων/στηλών στη μνήμη, τη διαχείριση του query context (FROM + JOINs), την ανάλυση aliases και τον έλεγχο συμβατότητας τύπων.</p>
+
+<hr class="page-break">
+
+<!-- ═══════════════ ΠΑΡΑΔΕΙΓΜΑΤΑ ═══════════════ -->
+<h2><span class="section-num">4.</span> Παραδείγματα Εφαρμογής</h2>
+
+<!-- Q1 examples -->
+<h3>4.1 Ερώτημα 1 — Συντακτική Ανάλυση</h3>
+
+<div class="test-label">✅ Παράδειγμα 1α: Έγκυρο CREATE TABLE (test1_create_ok.sql)</div>
+<pre class="output-ok">-- Test 1: Valid CREATE TABLE statements
+CREATE TABLE students (
+    id int,
+    name varchar(100),
+    age int,
+    gpa float
+);
+
+CREATE TABLE courses (
+    course_id int,
+    title varchar(255),
+    credits int
+);
+
+--- Syntax and semantics OK ---</pre>
+
+<div class="test-label">✅ Παράδειγμα 1β: Έγκυρο SELECT με όλους τους όρους (test2_select_ok.sql — απόσπασμα)</div>
+<pre class="output-ok">SELECT dept, name
+FROM employees
+WHERE salary > 30000
+GROUP BY dept
+ORDER BY name
+LIMIT 10;
+
+--- Syntax and semantics OK ---</pre>
+
+<div class="test-label">❌ Παράδειγμα 1γ: Συντακτικό σφάλμα — λείπει το ; (test3_syntax_error.sql)</div>
+<pre class="output-err">-- Test 3: Syntax error — missing semicolon at end
+CREATE TABLE products (
+    pid int,
+    pname varchar(50)
+)
+
+SELECT *
+
+Error at line 7: syntax error</pre>
+
+<!-- Q2 examples -->
+<h3>4.2 Ερώτημα 2 — Σημασιολογικοί Έλεγχοι</h3>
+
+<div class="test-label">✅ Παράδειγμα 2α: Σωστό ερώτημα με WHERE, GROUP BY, ORDER BY, LIMIT (test4_semantic_ok.sql)</div>
+<pre class="output-ok">CREATE TABLE orders (
+    order_id int,
+    customer varchar(100),
+    amount float,
+    status varchar(20)
+);
+
+SELECT order_id, customer
+FROM orders
+WHERE amount > 100.0 AND status = 'active'
+GROUP BY status
+ORDER BY customer
+LIMIT 5;
+
+--- Syntax and semantics OK ---</pre>
+
+<div class="test-label">❌ Παράδειγμα 2β: Σφάλμα — πίνακας δεν έχει δηλωθεί (test5_semantic_error.sql)</div>
+<pre class="output-err">-- Test 5: Semantic error — SELECT from undefined table
+SELECT *
+FROM undefined_table;
+
+Error at line 3: Semantic error: table 'undefined_table' not defined</pre>
+
+<div class="test-label">❌ Παράδειγμα 2γ: Σφάλμα — στήλη δεν υπάρχει στον πίνακα (test8_column_error.sql)</div>
+<pre class="output-err">CREATE TABLE inventory (
+    item_id int,
+    item_name varchar(100),
+    quantity int
+);
+
+SELECT item_id, nonexistent_column
+FROM inventory
+WHERE quantity > 0;
+
+Error at line 11: Semantic error: column 'nonexistent_column' not found in query tables</pre>
+
+<div class="test-label">❌ Παράδειγμα 2δ: Σφάλμα — ασυμβατότητα τύπων στο WHERE (test9_type_error.sql)</div>
+<pre class="output-err">CREATE TABLE users (
+    user_id int,
+    username varchar(50),
+    score float
+);
+
+SELECT *
+FROM users
+WHERE username = 42;
+
+Error at line 12: Semantic error: type mismatch for column 'username'</pre>
+
+<!-- Q3 examples -->
+<h3>4.3 Ερώτημα 3 — JOIN και Aliases</h3>
+
+<div class="test-label">✅ Παράδειγμα 3α: Έγκυρο JOIN (test6_join_ok.sql)</div>
+<pre class="output-ok">CREATE TABLE departments ( dept_id int, dept_name varchar(100) );
+CREATE TABLE staff ( staff_id int, full_name varchar(100), dept_id int, salary float );
+
+SELECT staff.full_name, departments.dept_name
+FROM staff
+JOIN departments ON staff.dept_id = departments.dept_id
+WHERE staff.salary > 50000;
+
+--- Syntax and semantics OK ---</pre>
+
+<div class="test-label">✅ Παράδειγμα 3β: Έγκυρες Aliases (test7_alias_ok.sql)</div>
+<pre class="output-ok">SELECT c.cust_name, i.total
+FROM customers AS c
+JOIN invoices AS i ON c.cust_id = i.cust_id
+WHERE i.total > 500.0
+ORDER BY c.cust_name
+LIMIT 10;
+
+--- Syntax and semantics OK ---</pre>
+
+<div class="test-label">✅ Παράδειγμα 3γ: Σχόλια μέσα σε εντολές (test10_comments.sql)</div>
+<pre class="output-ok">CREATE TABLE /* inline comment */ products (
+    -- this is a column comment
+    prod_id int,
+    prod_name varchar(255), /* inline block comment */
+    price float
+);
+
+SELECT prod_id, /* select comment */ prod_name
+FROM products
+WHERE price > 10.0 -- end-of-line comment
+  AND price &lt;= 999.99;
+
+--- Syntax and semantics OK ---</pre>
+
+<hr>
+
+<!-- ═══════════════ ΣΧΟΛΙΑ ═══════════════ -->
+<h2><span class="section-num">5.</span> Σχόλια – Παραδοχές</h2>
+
+<ul>
+  <li><strong>Αρνητικοί αριθμοί:</strong> Αναγνωρίζονται απευθείας από τον λεκτικό αναλυτή ως ενιαίο token (π.χ. <code>-512</code>, <code>-3.14</code>). Δεν αντιμετωπίζονται ως μοναδιαίος αρνητικός τελεστής.</li>
+  <li><strong>Σχόλια:</strong> Υποστηρίζονται σχόλια μίας γραμμής (<code>--</code>) και πολλαπλών γραμμών (<code>/* */</code>). Μπορούν να εμφανιστούν ανάμεσα σε οποιαδήποτε tokens, αλλά δεν επιτρέπεται να σπάνε ένα token.</li>
+  <li><strong>Εκτύπωση προγράμματος:</strong> Σε περίπτωση σφάλματος, εκτυπώνονται μόνο οι γραμμές μέχρι και τη γραμμή του σφάλματος. Σε επιτυχή ανάλυση, εκτυπώνεται ολόκληρο το πρόγραμμα.</li>
+  <li><strong>Αναβολή επικύρωσης SELECT στηλών:</strong> Οι στήλες του SELECT επικυρώνονται σημασιολογικά μετά την επεξεργασία των όρων FROM και JOIN, καθώς η γραμματική επεξεργάζεται το SELECT πριν το FROM.</li>
+  <li><strong>Σειρά όρων SELECT:</strong> Η σειρά SELECT → FROM → WHERE → GROUP BY → ORDER BY → LIMIT είναι αυστηρή. Διαφορετική σειρά αναγνωρίζεται ως συντακτικό σφάλμα.</li>
+  <li><strong>Aliases:</strong> Κάθε alias πρέπει να είναι μοναδικό εντός ενός ερωτήματος. Εάν δηλωθεί alias για έναν πίνακα, η αναφορά στις στήλες του γίνεται μέσω του alias.</li>
+  <li><strong>Τύποι δεδομένων:</strong> INT είναι συμβατό μόνο με ακέραια κυριολεκτικά, FLOAT με ακέραια ή πραγματικά, VARCHAR με αλφαριθμητικά (single-quoted).</li>
+  <li><strong>Σημασιολογικοί έλεγχοι Q2–Q3</strong> υλοποιούνται αποκλειστικά σε C μέσω του αρχείου <code>symtable.c</code> και ενσωματωμένων actions στο Bison.</li>
+</ul>
+
+<hr>
+<p class="center" style="color:#666; font-size:11pt;">Αρχές Γλωσσών Προγραμματισμού &amp; Μεταφραστών — Εαρινό Εξάμηνο 2026 — Πανεπιστήμιο Πατρών</p>
+
+</body>
+</html>
