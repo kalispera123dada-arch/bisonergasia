@@ -63,7 +63,7 @@
  * <opt_order>       ::= ε
  *                     | ORDER BY <col_ref_list>
  * <opt_limit>       ::= ε
- *                     | LIMIT int_literal        (must be strictly positive)
+ *                     | LIMIT int_literal        (πρεπει να ειναι θετικο)
  *
  * ────────────────────────────────────────────────────────────────────────────
  */
