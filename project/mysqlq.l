@@ -1,11 +1,4 @@
 %{
-/*
- * mysqlq.l — Flex lexer for the mySQLq pseudo-SQL language
- *
- * Keywords are case-insensitive.
- * Identifiers are case-sensitive.
- * Supports single-line (--) and multi-line (/* *\/) comments.
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
